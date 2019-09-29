@@ -14,5 +14,8 @@
         "ecmaVersion": 2018
     },
     "rules": {
+        "semi": "off",
+        "indent": ["error", 4],
+        "no-trailing-spaces": "off"
     }
 }
