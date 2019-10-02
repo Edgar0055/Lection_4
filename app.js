@@ -1,5 +1,8 @@
 const $http = require('http');
 const $url = require('url');
+const $fs = require('fs');
+const $path = require('path');
+const $pug = require('pug');
 
 $http.createServer((req, res) => {
     const { URL } = $url;
@@ -11,30 +14,22 @@ $http.createServer((req, res) => {
         // const enctype = 'multipart/form-data';
         const enctype = 'application/x-www-form-urlencoded';
         // const enctype = 'text/plain';
-        res.end(`
-        <html>
-            <body>
-                <form action="/" method="post" enctype="${enctype}" >
-                    <input type="text" name="${fieldName}" />
-                    <input type="submit" value="send" />
-                </form> 
-            </body> 
-        </html>`);        
+        const html = $pug.renderFile('form.pug', { enctype, fieldName });
+        res.end(html);        
     } else if (method === 'POST' && uri.pathname === '/') {
         let data = '';
         req.on('data', (chunk) => {
             data += chunk;
         }).on('end', () => {
-            const { query } = $url.parse(`?${data}`, true);
-            const [[name, value]] = [...Object.entries(query)];
+            const parse = (data) => data.split('&')
+                .map(_ => _.split('=', 2))
+                .map(([key, value]) => ({ [decodeURIComponent(key)]: decodeURIComponent(value) }))
+                .reduce((__, _) => Object.assign(__, _), {});
+            const query = parse(data);
+            const [[fieldName, fieldValue]] = [...Object.entries(query)];
             res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(`
-            <html>
-                <body>
-                    <h4>Result:</h4>
-                    <div><span><b>Name</b>: ${name}</span><span><b>Value</b>: ${value}</span></div>
-                </body> 
-            </html>`);    
+            const html = $pug.renderFile('result.pug', { fieldName, fieldValue });
+            res.end(html);    
         }).on('error', () => {
             res.writeHead(403, { });
             res.end();
